@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Language Exam Generator V5</title>
+    <title>AI Language Exam Generator V6</title>
     <style>
         :root { 
             --primary: #2563eb; --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0; 
             --app-font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --app-font-size: 16px; /* Biến quản lý kích cỡ chữ */
             --exam-color: #1e293b;
             --answer-color: #0369a1;
         }
         body { font-family: var(--app-font); background-color: var(--bg); color: #333; line-height: 1.6; padding: 20px; max-width: 1200px; margin: 0 auto; position: relative; transition: all 0.3s ease; }
         h1, h2, h3 { color: var(--primary); margin-top: 0; }
         .card { background: var(--surface); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px; }
         label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
         select, input[type="text"], input[type="color"], textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 5px; box-sizing: border-box; font-family: inherit; }
-        input[type="color"] { padding: 2px; height: 42px; cursor: pointer; }
+        input[type="color"] { padding: 2px; height: 35px; cursor: pointer; }
+        input[type="range"] { width: 100%; cursor: pointer; }
         button { background-color: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
         button:hover { background-color: #1d4ed8; }
         .btn-secondary { background-color: #10b981; }
@@ -34,9 +36,9 @@
         .workspace-grid { display: grid; grid-template-columns: 3fr 1.5fr; gap: 20px; }
         @media (max-width: 768px) { .workspace-grid { grid-template-columns: 1fr; } }
         
-        .exam-content-box { background: #f1f5f9; padding: 15px; border-radius: 5px; white-space: pre-wrap; height: 500px; overflow-y: auto; border: 1px solid var(--border); color: var(--exam-color); font-size: 16px;}
+        .exam-content-box { background: #f1f5f9; padding: 15px; border-radius: 5px; white-space: pre-wrap; height: 500px; overflow-y: auto; border: 1px solid var(--border); color: var(--exam-color); font-size: var(--app-font-size); transition: font-size 0.2s;}
         .answer-box { background: #e0f2fe; padding: 15px; border-radius: 5px; border: 1px solid #bae6fd; display: flex; flex-direction: column; }
-        .answer-box textarea { flex-grow: 1; height: auto; min-height: 300px; font-size: 16px; background: white; color: var(--answer-color); font-weight: 500;}
+        .answer-box textarea { flex-grow: 1; height: auto; min-height: 300px; font-size: var(--app-font-size); background: white; color: var(--answer-color); font-weight: 500; transition: font-size 0.2s;}
         
         .controls { display: flex; gap: 10px; align-items: center; background: #e0e7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         #record-status { color: #dc2626; font-weight: bold; display: none; animation: blink 1s infinite; }
@@ -69,31 +71,46 @@
 
     <h1>🌐 AI Language Exam Hub</h1>
 
-    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+    <div class="grid" style="grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 20px;">
         
         <div class="card" style="background-color: #f0fdf4; border-color: #bbf7d0; margin-bottom: 0;">
             <h3 style="margin-bottom: 10px; color: #166534;">💾 Quản lý Bài Học</h3>
-            <p style="font-size: 13px; margin-top: 0;">Lưu lại toàn bộ Đề thi và câu trả lời của bạn.</p>
-            <button onclick="exportData()">⬇️ Tải xuống (Lưu bài)</button>
-            <input type="file" id="import-file" style="display:none" onchange="importData(event)" accept=".json">
-            <button class="btn-secondary" onclick="document.getElementById('import-file').click()" style="margin-left: 10px;">⬆️ Mở bài cũ (Import)</button>
+            <p style="font-size: 13px; margin-top: 0;">Lưu lại toàn bộ Đề thi và câu trả lời.</p>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="exportData()" style="flex: 1;">⬇️ Tải xuống</button>
+                <input type="file" id="import-file" style="display:none" onchange="importData(event)" accept=".json">
+                <button class="btn-secondary" onclick="document.getElementById('import-file').click()" style="flex: 1;">⬆️ Mở bài cũ</button>
+            </div>
         </div>
 
         <div class="card" style="background-color: #fdf4ff; border-color: #f0abfc; margin-bottom: 0;">
             <h3 style="margin-bottom: 10px; color: #a21caf;">🎨 Cài đặt Giao diện</h3>
-            <div style="display: flex; gap: 10px;">
-                <select id="font-family" onchange="updateTheme()" style="flex: 2;">
-                    <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Phông Mặc định</option>
-                    <option value="'Times New Roman', Times, serif">Times New Roman</option>
-                    <option value="Arial, Helvetica, sans-serif">Arial</option>
-                </select>
-                <div style="display: flex; flex-direction: column; flex: 1;">
-                    <label style="font-size: 11px;">Màu Đề:</label>
-                    <input type="color" id="color-exam" value="#1e293b" onchange="updateTheme()" style="height: 25px;">
+            <div class="grid" style="margin-bottom: 0;">
+                <div style="grid-column: span 2;">
+                    <label style="font-size: 12px;">Phông chữ toàn trang:</label>
+                    <select id="font-family" onchange="updateTheme()" style="padding: 5px;">
+                        <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Segoe UI (Mặc định)</option>
+                        <option value="Arial, Helvetica, sans-serif">Arial (Rõ ràng, dễ đọc)</option>
+                        <option value="'Times New Roman', Times, serif">Times New Roman (Cổ điển)</option>
+                        <option value="Georgia, serif">Georgia (Mềm mại)</option>
+                        <option value="'Courier New', Courier, monospace">Courier New (Gõ mã / Monospace)</option>
+                        <option value="'Comic Sans MS', cursive, sans-serif">Comic Sans MS (Vui nhộn)</option>
+                        <option value="'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif">Trebuchet MS (Hiện đại)</option>
+                        <option value="Verdana, Geneva, Tahoma, sans-serif">Verdana (To, rõ ràng)</option>
+                        <option value="Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif">Impact (In đậm, mạnh mẽ)</option>
+                    </select>
                 </div>
-                <div style="display: flex; flex-direction: column; flex: 1;">
-                    <label style="font-size: 11px;">Màu Đáp án:</label>
-                    <input type="color" id="color-answer" value="#0369a1" onchange="updateTheme()" style="height: 25px;">
+                <div>
+                    <label style="font-size: 12px;">Kích cỡ chữ: <span id="size-label">16px</span></label>
+                    <input type="range" id="font-size" min="12" max="28" value="16" oninput="updateTheme()">
+                </div>
+                <div>
+                    <label style="font-size: 12px;">Màu chữ Đề:</label>
+                    <input type="color" id="color-exam" value="#1e293b" onchange="updateTheme()">
+                </div>
+                <div>
+                    <label style="font-size: 12px;">Màu chữ Đáp án:</label>
+                    <input type="color" id="color-answer" value="#0369a1" onchange="updateTheme()">
                 </div>
             </div>
         </div>
@@ -218,11 +235,25 @@
     </div>
 
     <script>
+        // CẬP NHẬT GIAO DIỆN (Thêm logic Kích cỡ chữ)
+        function updateTheme() {
+            const font = document.getElementById('font-family').value;
+            const size = document.getElementById('font-size').value;
+            const examColor = document.getElementById('color-exam').value;
+            const answerColor = document.getElementById('color-answer').value;
+
+            document.getElementById('size-label').innerText = size + 'px';
+
+            document.documentElement.style.setProperty('--app-font', font);
+            document.documentElement.style.setProperty('--app-font-size', size + 'px');
+            document.documentElement.style.setProperty('--exam-color', examColor);
+            document.documentElement.style.setProperty('--answer-color', answerColor);
+        }
+
         // QUẢN LÝ CỬA SỔ POPUP
         let openedWindows = [];
 
         function openAIPopup(url) { 
-            // Mở popup và thêm vào mảng quản lý
             const newWin = window.open(url, "_blank", "width=600,height=700,left=200,top=100,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no"); 
             if (newWin) openedWindows.push(newWin);
         }
@@ -235,7 +266,7 @@
                     closedCount++;
                 }
             });
-            openedWindows = []; // Xóa danh sách
+            openedWindows = []; 
             if (closedCount > 0) alert(`✅ Đã đóng thành công ${closedCount} cửa sổ AI.`);
             else alert("⚠️ Không có cửa sổ AI nào đang mở từ trang web này.");
         }
@@ -249,7 +280,6 @@
 
         // TÍNH NĂNG EXPORT / IMPORT
         function exportData() {
-            // Gom toàn bộ dữ liệu đang có trên màn hình
             const appData = {
                 lang: document.getElementById('lang').value,
                 level: document.getElementById('level').value,
@@ -259,15 +289,18 @@
                 listeningAns: document.getElementById('listening-ans').value,
                 writingAns: document.getElementById('user-essay').value,
                 speakingAns: document.getElementById('user-speech').value,
+                theme: {
+                    fontFamily: document.getElementById('font-family').value,
+                    fontSize: document.getElementById('font-size').value,
+                    examColor: document.getElementById('color-exam').value,
+                    answerColor: document.getElementById('color-answer').value
+                },
                 timestamp: new Date().toLocaleString()
             };
 
-            // Đóng gói thành file JSON và kích hoạt tải xuống
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
             const downloadAnchorNode = document.createElement('a');
             downloadAnchorNode.setAttribute("href", dataStr);
-            
-            // Tên file có chứa ngôn ngữ và chủ đề cho dễ tìm
             let fileName = `Bai_Thi_${appData.lang}_${appData.topic.replace(/\s+/g, '_')}.json`;
             downloadAnchorNode.setAttribute("download", fileName);
             document.body.appendChild(downloadAnchorNode);
@@ -284,42 +317,35 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     
-                    // Phục hồi thông số
                     if(data.lang) document.getElementById('lang').value = data.lang;
                     if(data.level) document.getElementById('level').value = data.level;
                     if(data.topic) document.getElementById('topic').value = data.topic;
                     
-                    // Phục hồi Đề thi và chạy xử lý cắt thẻ
                     if(data.examText) {
                         document.getElementById('ai-response').value = data.examText;
                         processExam(); 
                     }
 
-                    // Phục hồi Bài làm của người dùng
                     if(data.readingAns) document.getElementById('reading-ans').value = data.readingAns;
                     if(data.listeningAns) document.getElementById('listening-ans').value = data.listeningAns;
                     if(data.writingAns) document.getElementById('user-essay').value = data.writingAns;
                     if(data.speakingAns) document.getElementById('user-speech').value = data.speakingAns;
 
+                    if(data.theme) {
+                        document.getElementById('font-family').value = data.theme.fontFamily || "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+                        document.getElementById('font-size').value = data.theme.fontSize || "16";
+                        document.getElementById('color-exam').value = data.theme.examColor || "#1e293b";
+                        document.getElementById('color-answer').value = data.theme.answerColor || "#0369a1";
+                        updateTheme();
+                    }
+
                     alert("✅ Đã khôi phục Bài học thành công!");
                 } catch(err) {
                     alert("⚠️ Lỗi: File không đúng định dạng tải về lúc trước.");
                 }
-                // Reset file input để có thể tải lại cùng 1 file nếu cần
                 event.target.value = ''; 
             };
             reader.readAsText(file);
-        }
-
-        // CÁC HÀM GIAO DIỆN & TIỆN ÍCH CŨ
-        function updateTheme() {
-            const font = document.getElementById('font-family').value;
-            const examColor = document.getElementById('color-exam').value;
-            const answerColor = document.getElementById('color-answer').value;
-
-            document.documentElement.style.setProperty('--app-font', font);
-            document.documentElement.style.setProperty('--exam-color', examColor);
-            document.documentElement.style.setProperty('--answer-color', answerColor);
         }
 
         function analyzeSelectedText() {
@@ -398,7 +424,6 @@ Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### 
             event.target.classList.add('active-tab');
         }
 
-        // TÍNH NĂNG ÂM THANH (Đọc chữ & Thu âm)
         let synth = window.speechSynthesis;
         let voices = [];
         function loadVoices() {
@@ -451,6 +476,8 @@ Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### 
             recognition.lang = langMap[document.getElementById('lang').value] || 'en-US';
 
             recognition.onstart = () => { status.style.display = 'inline'; };
+            
+            // Xử lý sự kiện dựa trên event để đảm bảo độ tin cậy
             recognition.onresult = (event) => {
                 let final_transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -458,6 +485,7 @@ Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### 
                 }
                 if (final_transcript) document.getElementById('user-speech').value += final_transcript + ' ';
             };
+            
             recognition.onerror = () => { status.style.display = 'none'; };
             recognition.onend = () => { status.style.display = 'none'; };
             recognition.start();
