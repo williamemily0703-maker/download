@@ -250,27 +250,44 @@
             document.documentElement.style.setProperty('--answer-color', answerColor);
         }
 
-        // QUẢN LÝ CỬA SỔ POPUP
-        let openedWindows = [];
+        // =========================
+// QUẢN LÝ 1 CỬA SỔ AI DUY NHẤT (TỐI ƯU)
+// =========================
 
-        function openAIPopup(url) { 
-            const newWin = window.open(url, "_blank", "width=600,height=700,left=200,top=100,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no"); 
-            if (newWin) openedWindows.push(newWin);
+let aiWindow = null;
+
+// Mở hoặc tái sử dụng cửa sổ AI
+function openAIPopup(url) {
+    // Nếu chưa có hoặc đã bị đóng → mở mới
+    if (!aiWindow || aiWindow.closed) {
+        aiWindow = window.open(
+            url,
+            "AI_Window",
+            "width=700,height=800,resizable=yes,scrollbars=yes"
+        );
+
+        if (!aiWindow) {
+            alert("⚠️ Popup bị chặn! Hãy cho phép popup cho trang này.");
+            return;
         }
 
-        function closeAllPopups() {
-            let closedCount = 0;
-            openedWindows.forEach(win => {
-                if (win && !win.closed) {
-                    win.close();
-                    closedCount++;
-                }
-            });
-            openedWindows = []; 
-            if (closedCount > 0) alert(`✅ Đã đóng thành công ${closedCount} cửa sổ AI.`);
-            else alert("⚠️ Không có cửa sổ AI nào đang mở từ trang web này.");
-        }
+    } else {
+        // Nếu đã có → chỉ đổi URL + focus
+        aiWindow.location.href = url;
+        aiWindow.focus();
+    }
+}
 
+// Đóng cửa sổ AI
+function closeAllPopups() {
+    if (aiWindow && !aiWindow.closed) {
+        aiWindow.close();
+        aiWindow = null;
+        alert("✅ Đã đóng cửa sổ AI.");
+    } else {
+        alert("⚠️ Không có cửa sổ AI nào đang mở.");
+    }
+}
         function copyAndOpenStudio() {
             document.getElementById('live-prompt').select();
             document.execCommand('copy');
