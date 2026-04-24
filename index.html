@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Language Exam Generator V4</title>
+    <title>AI Language Exam Generator V5</title>
     <style>
         :root { 
             --primary: #2563eb; --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0; 
-            /* Các biến CSS có thể thay đổi bằng JS */
             --app-font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             --exam-color: #1e293b;
             --answer-color: #0369a1;
@@ -35,10 +34,7 @@
         .workspace-grid { display: grid; grid-template-columns: 3fr 1.5fr; gap: 20px; }
         @media (max-width: 768px) { .workspace-grid { grid-template-columns: 1fr; } }
         
-        /* Màu của phần Đề thi */
         .exam-content-box { background: #f1f5f9; padding: 15px; border-radius: 5px; white-space: pre-wrap; height: 500px; overflow-y: auto; border: 1px solid var(--border); color: var(--exam-color); font-size: 16px;}
-        
-        /* Màu của phần Bài làm/Đáp án */
         .answer-box { background: #e0f2fe; padding: 15px; border-radius: 5px; border: 1px solid #bae6fd; display: flex; flex-direction: column; }
         .answer-box textarea { flex-grow: 1; height: auto; min-height: 300px; font-size: 16px; background: white; color: var(--answer-color); font-weight: 500;}
         
@@ -46,15 +42,17 @@
         #record-status { color: #dc2626; font-weight: bold; display: none; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0; } }
 
-        /* Thanh công cụ AI nổi bên phải */
+        /* Thanh công cụ AI nổi */
         .floating-ai-tools { position: fixed; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; z-index: 1000; }
-        .floating-ai-tools button { background-color: #4f46e5; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-radius: 8px; padding: 12px 15px; width: 170px; display: flex; align-items: center; justify-content: flex-start; gap: 8px;}
+        .floating-ai-tools button { background-color: #4f46e5; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-radius: 8px; padding: 12px 15px; width: 180px; display: flex; align-items: center; justify-content: flex-start; gap: 8px;}
         .floating-ai-tools button:hover { background-color: #3730a3; transform: scale(1.05); }
         .btn-analyze { background-color: #ec4899 !important; border: 2px solid white;}
         .btn-analyze:hover { background-color: #be185d !important; }
+        .btn-close-all { background-color: #ef4444 !important; border: 2px solid white; margin-top: 15px;}
+        .btn-close-all:hover { background-color: #b91c1c !important; }
         
         @media (max-width: 1000px) {
-            .floating-ai-tools { top: auto; bottom: 20px; right: 20px; transform: none; flex-direction: row; flex-wrap: wrap; width: 300px; justify-content: flex-end;}
+            .floating-ai-tools { top: auto; bottom: 20px; right: 20px; transform: none; flex-direction: row; flex-wrap: wrap; width: 320px; justify-content: flex-end;}
             .floating-ai-tools button { width: auto; padding: 8px; font-size: 12px;}
         }
     </style>
@@ -66,30 +64,37 @@
         <button onclick="openAIPopup('https://chatgpt.com')">🤖 Mở ChatGPT</button>
         <button onclick="openAIPopup('https://gemini.google.com')">✨ Mở Gemini</button>
         <button onclick="openAIPopup('https://chat.deepseek.com')">🐋 Mở DeepSeek</button>
+        <button class="btn-close-all" onclick="closeAllPopups()">❌ Đóng tất cả AI</button>
     </div>
 
     <h1>🌐 AI Language Exam Hub</h1>
 
-    <div class="card" style="background-color: #fdf4ff; border-color: #f0abfc;">
-        <h3 style="margin-bottom: 10px; color: #a21caf;">🎨 Cài đặt Giao diện & Hiển thị</h3>
-        <div class="grid">
-            <div>
-                <label>Phông chữ toàn trang:</label>
-                <select id="font-family" onchange="updateTheme()">
-                    <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Mặc định (Segoe UI)</option>
-                    <option value="'Times New Roman', Times, serif">Times New Roman (Cổ điển)</option>
-                    <option value="Arial, Helvetica, sans-serif">Arial (Dễ đọc)</option>
-                    <option value="'Courier New', Courier, monospace">Courier New (Kiểu gõ máy)</option>
-                    <option value="'Comic Sans MS', cursive, sans-serif">Comic Sans (Vui nhộn)</option>
+    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+        
+        <div class="card" style="background-color: #f0fdf4; border-color: #bbf7d0; margin-bottom: 0;">
+            <h3 style="margin-bottom: 10px; color: #166534;">💾 Quản lý Bài Học</h3>
+            <p style="font-size: 13px; margin-top: 0;">Lưu lại toàn bộ Đề thi và câu trả lời của bạn.</p>
+            <button onclick="exportData()">⬇️ Tải xuống (Lưu bài)</button>
+            <input type="file" id="import-file" style="display:none" onchange="importData(event)" accept=".json">
+            <button class="btn-secondary" onclick="document.getElementById('import-file').click()" style="margin-left: 10px;">⬆️ Mở bài cũ (Import)</button>
+        </div>
+
+        <div class="card" style="background-color: #fdf4ff; border-color: #f0abfc; margin-bottom: 0;">
+            <h3 style="margin-bottom: 10px; color: #a21caf;">🎨 Cài đặt Giao diện</h3>
+            <div style="display: flex; gap: 10px;">
+                <select id="font-family" onchange="updateTheme()" style="flex: 2;">
+                    <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Phông Mặc định</option>
+                    <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                    <option value="Arial, Helvetica, sans-serif">Arial</option>
                 </select>
-            </div>
-            <div>
-                <label>Màu chữ Đề Thi (Trái):</label>
-                <input type="color" id="color-exam" value="#1e293b" onchange="updateTheme()">
-            </div>
-            <div>
-                <label>Màu chữ Bài Làm / Đáp Án (Phải):</label>
-                <input type="color" id="color-answer" value="#0369a1" onchange="updateTheme()">
+                <div style="display: flex; flex-direction: column; flex: 1;">
+                    <label style="font-size: 11px;">Màu Đề:</label>
+                    <input type="color" id="color-exam" value="#1e293b" onchange="updateTheme()" style="height: 25px;">
+                </div>
+                <div style="display: flex; flex-direction: column; flex: 1;">
+                    <label style="font-size: 11px;">Màu Đáp án:</label>
+                    <input type="color" id="color-answer" value="#0369a1" onchange="updateTheme()" style="height: 25px;">
+                </div>
             </div>
         </div>
     </div>
@@ -127,14 +132,13 @@
             </div>
         </div>
         <button onclick="generatePrompt()">1. Tạo câu lệnh (Prompt)</button>
-        <button class="btn-secondary" onclick="copyPrompt()">2. Copy Prompt (Sau đó bấm mở AI bên góc phải)</button>
+        <button class="btn-secondary" onclick="copyPrompt()">2. Copy Prompt</button>
         <br><br>
         <textarea id="generated-prompt" readonly style="height: 80px;"></textarea>
     </div>
 
     <div class="card">
         <h2>Bước 2: Xử lý Đề thi từ AI</h2>
-        <p>Copy toàn bộ kết quả AI trả về và dán vào đây:</p>
         <textarea id="ai-response" placeholder="Dán đề thi AI sinh ra vào đây..."></textarea>
         <br><br>
         <button onclick="processExam()">Xử lý & Tạo không gian làm bài</button>
@@ -156,7 +160,7 @@
                 <div class="exam-content-box" id="reading-content"></div>
                 <div class="answer-box">
                     <h3>Phiếu làm bài Reading</h3>
-                    <textarea placeholder="Gõ đáp án của bạn vào đây (VD: 1A, 2B, 3. True...)"></textarea>
+                    <textarea id="reading-ans" placeholder="Gõ đáp án của bạn vào đây (VD: 1A, 2B, 3. True...)"></textarea>
                 </div>
             </div>
         </div>
@@ -172,7 +176,7 @@
                 <div class="exam-content-box" id="listening-content"></div>
                 <div class="answer-box">
                     <h3>Phiếu làm bài Listening</h3>
-                    <textarea placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>
+                    <textarea id="listening-ans" placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>
                 </div>
             </div>
         </div>
@@ -214,7 +218,100 @@
     </div>
 
     <script>
-        // HÀM ĐỔI GIAO DIỆN (FONT & MÀU CHỮ)
+        // QUẢN LÝ CỬA SỔ POPUP
+        let openedWindows = [];
+
+        function openAIPopup(url) { 
+            // Mở popup và thêm vào mảng quản lý
+            const newWin = window.open(url, "_blank", "width=600,height=700,left=200,top=100,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no"); 
+            if (newWin) openedWindows.push(newWin);
+        }
+
+        function closeAllPopups() {
+            let closedCount = 0;
+            openedWindows.forEach(win => {
+                if (win && !win.closed) {
+                    win.close();
+                    closedCount++;
+                }
+            });
+            openedWindows = []; // Xóa danh sách
+            if (closedCount > 0) alert(`✅ Đã đóng thành công ${closedCount} cửa sổ AI.`);
+            else alert("⚠️ Không có cửa sổ AI nào đang mở từ trang web này.");
+        }
+
+        function copyAndOpenStudio() {
+            document.getElementById('live-prompt').select();
+            document.execCommand('copy');
+            alert("Đã copy lệnh! Đang mở Google AI Studio Live...");
+            openAIPopup('https://aistudio.google.com/live?model=gemini-3.1-flash-live-preview');
+        }
+
+        // TÍNH NĂNG EXPORT / IMPORT
+        function exportData() {
+            // Gom toàn bộ dữ liệu đang có trên màn hình
+            const appData = {
+                lang: document.getElementById('lang').value,
+                level: document.getElementById('level').value,
+                topic: document.getElementById('topic').value,
+                examText: document.getElementById('ai-response').value,
+                readingAns: document.getElementById('reading-ans').value,
+                listeningAns: document.getElementById('listening-ans').value,
+                writingAns: document.getElementById('user-essay').value,
+                speakingAns: document.getElementById('user-speech').value,
+                timestamp: new Date().toLocaleString()
+            };
+
+            // Đóng gói thành file JSON và kích hoạt tải xuống
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            
+            // Tên file có chứa ngôn ngữ và chủ đề cho dễ tìm
+            let fileName = `Bai_Thi_${appData.lang}_${appData.topic.replace(/\s+/g, '_')}.json`;
+            downloadAnchorNode.setAttribute("download", fileName);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Phục hồi thông số
+                    if(data.lang) document.getElementById('lang').value = data.lang;
+                    if(data.level) document.getElementById('level').value = data.level;
+                    if(data.topic) document.getElementById('topic').value = data.topic;
+                    
+                    // Phục hồi Đề thi và chạy xử lý cắt thẻ
+                    if(data.examText) {
+                        document.getElementById('ai-response').value = data.examText;
+                        processExam(); 
+                    }
+
+                    // Phục hồi Bài làm của người dùng
+                    if(data.readingAns) document.getElementById('reading-ans').value = data.readingAns;
+                    if(data.listeningAns) document.getElementById('listening-ans').value = data.listeningAns;
+                    if(data.writingAns) document.getElementById('user-essay').value = data.writingAns;
+                    if(data.speakingAns) document.getElementById('user-speech').value = data.speakingAns;
+
+                    alert("✅ Đã khôi phục Bài học thành công!");
+                } catch(err) {
+                    alert("⚠️ Lỗi: File không đúng định dạng tải về lúc trước.");
+                }
+                // Reset file input để có thể tải lại cùng 1 file nếu cần
+                event.target.value = ''; 
+            };
+            reader.readAsText(file);
+        }
+
+        // CÁC HÀM GIAO DIỆN & TIỆN ÍCH CŨ
         function updateTheme() {
             const font = document.getElementById('font-family').value;
             const examColor = document.getElementById('color-exam').value;
@@ -225,44 +322,20 @@
             document.documentElement.style.setProperty('--answer-color', answerColor);
         }
 
-        // HÀM PHÂN TÍCH CÂU BÔI ĐEN
         function analyzeSelectedText() {
             const selectedText = window.getSelection().toString().trim();
-            if (!selectedText) {
-                alert("⚠️ Vui lòng dùng chuột BÔI ĐEN câu hỏi/đoạn văn bạn muốn phân tích trước khi bấm nút này!");
-                return;
-            }
+            if (!selectedText) { alert("⚠️ Vui lòng dùng chuột BÔI ĐEN câu/đoạn văn muốn phân tích!"); return; }
 
             const lang = document.getElementById('lang').value;
-            const prompt = `Hãy đóng vai một chuyên gia ngôn ngữ. Tôi đang làm bài thi tiếng ${lang}. Hãy phân tích đoạn/câu sau đây:
-"""
-${selectedText}
-"""
+            const prompt = `Hãy đóng vai một chuyên gia ngôn ngữ. Tôi đang làm bài thi tiếng ${lang}. Hãy phân tích đoạn/câu sau đây:\n"""\n${selectedText}\n"""\n\nVui lòng cung cấp:\n1. Giải thích chi tiết tại sao đúng/sai.\n2. Dịch đoạn trên sang Tiếng Việt tự nhiên.\n3. Cung cấp phiên âm quốc tế (IPA) cho các từ.\n4. Phân tích các điểm ngữ pháp hoặc từ vựng khó.`;
 
-Vui lòng cung cấp cho tôi:
-1. Giải thích chi tiết tại sao đúng/sai (nếu đây là câu hỏi trắc nghiệm/điền từ).
-2. Dịch toàn bộ đoạn/câu trên sang Tiếng Việt một cách tự nhiên.
-3. Cung cấp phiên âm quốc tế (IPA) cho các từ trong câu.
-4. Phân tích các điểm ngữ pháp quan trọng hoặc từ vựng khó cần nắm vững trong câu này.`;
-
-            // Tạo textarea ẩn để copy text
             const temp = document.createElement("textarea");
             temp.value = prompt;
             document.body.appendChild(temp);
             temp.select();
             document.execCommand("copy");
             document.body.removeChild(temp);
-
-            alert("✅ Đã tạo Lệnh Phân Tích thành công!\n\nBây giờ hãy bấm mở ChatGPT/Gemini/DeepSeek ở thanh bên phải và DÁN (Paste) vào để xem giải thích chi tiết.");
-        }
-
-        // CÁC HÀM CŨ ĐÃ HOẠT ĐỘNG TỐT
-        function openAIPopup(url) { window.open(url, "AIPopup", "width=600,height=700,left=200,top=100,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no"); }
-        function copyAndOpenStudio() {
-            document.getElementById('live-prompt').select();
-            document.execCommand('copy');
-            alert("Đã copy lệnh! Đang mở Google AI Studio Live...");
-            openAIPopup('https://aistudio.google.com/live?model=gemini-3.1-flash-live-preview');
+            alert("✅ Đã tạo Lệnh Phân Tích thành công! Hãy mở AI và dán vào.");
         }
 
         const promptTemplate = `Act as a professional language exam designer. Create a complete exam with 4 skills based on a {LEVEL} level in CEFR.
@@ -325,6 +398,7 @@ Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### 
             event.target.classList.add('active-tab');
         }
 
+        // TÍNH NĂNG ÂM THANH (Đọc chữ & Thu âm)
         let synth = window.speechSynthesis;
         let voices = [];
         function loadVoices() {
@@ -367,10 +441,11 @@ Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### 
         }
 
         function startDictation() {
-            if (!('webkitSpeechRecognition' in window)) { alert("Trình duyệt không hỗ trợ Web Speech API."); return; }
+            if (!('webkitSpeechRecognition' in window)) { alert("Trình duyệt không hỗ trợ thu âm. Vui lòng dùng Google Chrome."); return; }
             const status = document.getElementById('record-status');
             const recognition = new webkitSpeechRecognition();
             const langMap = { "German": "de-DE", "English": "en-US", "Chinese": "zh-CN", "Japanese": "ja-JP", "Korean": "ko-KR", "Spanish": "es-ES", "French": "fr-FR", "Russian": "ru-RU", "Hindi": "hi-IN", "Arabic": "ar-SA", "Thai": "th-TH", "Filipino": "fil-PH" };
+            
             recognition.continuous = true;
             recognition.interimResults = true;
             recognition.lang = langMap[document.getElementById('lang').value] || 'en-US';
