@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Language Exam Generator V6</title>
+    <title>AI Language Exam Generator V7</title>
     <style>
         :root { 
             --primary: #2563eb; --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0; 
             --app-font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            --app-font-size: 16px; /* Biến quản lý kích cỡ chữ */
+            --app-font-size: 16px; 
             --exam-color: #1e293b;
             --answer-color: #0369a1;
         }
@@ -63,9 +63,9 @@
 
     <div class="floating-ai-tools">
         <button class="btn-analyze" onclick="analyzeSelectedText()">🔍 Phân tích câu (Bôi đen)</button>
-        <button onclick="openAIPopup('https://chatgpt.com')">🤖 Mở ChatGPT</button>
-        <button onclick="openAIPopup('https://gemini.google.com')">✨ Mở Gemini</button>
-        <button onclick="openAIPopup('https://chat.deepseek.com')">🐋 Mở DeepSeek</button>
+        <button onclick="openNamedPopup('https://chatgpt.com', 'Window_ChatGPT')">🤖 Mở ChatGPT</button>
+        <button onclick="openNamedPopup('https://gemini.google.com', 'Window_Gemini')">✨ Mở Gemini</button>
+        <button onclick="openNamedPopup('https://chat.deepseek.com', 'Window_DeepSeek')">🐋 Mở DeepSeek</button>
         <button class="btn-close-all" onclick="closeAllPopups()">❌ Đóng tất cả AI</button>
     </div>
 
@@ -235,7 +235,7 @@
     </div>
 
     <script>
-        // CẬP NHẬT GIAO DIỆN (Thêm logic Kích cỡ chữ)
+        // CẬP NHẬT GIAO DIỆN
         function updateTheme() {
             const font = document.getElementById('font-family').value;
             const size = document.getElementById('font-size').value;
@@ -250,32 +250,41 @@
             document.documentElement.style.setProperty('--answer-color', answerColor);
         }
 
-        // QUẢN LÝ CỬA SỔ POPUP
-        let openedWindows = [];
+        // QUẢN LÝ CỬA SỔ POPUP BẰNG OBJECT VÀ TÊN ĐỊNH DANH CỐ ĐỊNH
+        let activePopups = {};
 
-        function openAIPopup(url) { 
-            const newWin = window.open(url, "_blank", "width=600,height=700,left=200,top=100,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no"); 
-            if (newWin) openedWindows.push(newWin);
+        function openNamedPopup(url, windowName) { 
+            // Dùng windowName để trình duyệt không đẻ thêm cửa sổ mới nếu bấm nhiều lần
+            const newWin = window.open(url, windowName, "width=600,height=700,left=200,top=100,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no"); 
+            if (newWin) {
+                activePopups[windowName] = newWin;
+            }
         }
 
         function closeAllPopups() {
             let closedCount = 0;
-            openedWindows.forEach(win => {
+            // Lặp qua danh sách đang nhớ để đóng
+            for (let name in activePopups) {
+                let win = activePopups[name];
                 if (win && !win.closed) {
                     win.close();
                     closedCount++;
                 }
-            });
-            openedWindows = []; 
-            if (closedCount > 0) alert(`✅ Đã đóng thành công ${closedCount} cửa sổ AI.`);
-            else alert("⚠️ Không có cửa sổ AI nào đang mở từ trang web này.");
+            }
+            activePopups = {}; // Reset danh sách
+            
+            if (closedCount > 0) {
+                alert(`✅ Đã đóng thành công ${closedCount} cửa sổ AI.`);
+            } else {
+                alert("⚠️ Hệ thống không tìm thấy cửa sổ AI nào trong bộ nhớ.\n\nLưu ý: Nếu bạn vừa F5 (Tải lại trang) hoặc chép code mới, trình duyệt sẽ xóa toàn bộ trí nhớ tạm khiến nút này không thể điều khiển các cửa sổ cũ được nữa. Hãy tắt thủ công lần này nhé!");
+            }
         }
 
         function copyAndOpenStudio() {
             document.getElementById('live-prompt').select();
             document.execCommand('copy');
             alert("Đã copy lệnh! Đang mở Google AI Studio Live...");
-            openAIPopup('https://aistudio.google.com/live?model=gemini-3.1-flash-live-preview');
+            openNamedPopup('https://aistudio.google.com/live?model=gemini-3.1-flash-live-preview', 'Window_GeminiLive');
         }
 
         // TÍNH NĂNG EXPORT / IMPORT
@@ -477,7 +486,6 @@ Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### 
 
             recognition.onstart = () => { status.style.display = 'inline'; };
             
-            // Xử lý sự kiện dựa trên event để đảm bảo độ tin cậy
             recognition.onresult = (event) => {
                 let final_transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
