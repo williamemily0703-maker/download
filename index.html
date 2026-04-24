@@ -1,267 +1,327 @@
-import os
-
-html_content = """
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Handwriting Scanner</title>
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&family=EB+Garamond&family=Montserrat:wght@300;400;600&family=Playfair+Display&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <title>AI Language Exam Generator</title>
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #1e293b;
-            --border: #e2e8f0;
-        }
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 15px;
-            color: var(--text);
-        }
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        @media (max-width: 768px) {
-            .main-grid { grid-template-columns: 1fr; }
-        }
-        .card {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .input-group label {
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-        input[type="password"], input[type="file"], select {
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-family: inherit;
-        }
-        .btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background 0.2s;
-            font-size: 1em;
-        }
-        .btn:hover { background: var(--primary-hover); }
-        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
-        
-        #preview-img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            border: 1px dashed var(--border);
-            display: none;
-        }
-        #output-text {
-            width: 100%;
-            height: 300px;
-            padding: 15px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 16px;
-            resize: vertical;
-            box-sizing: border-box;
-            line-height: 1.6;
-        }
-        .status {
-            font-size: 0.9em;
-            font-weight: 600;
-            text-align: center;
-        }
-        .status.error { color: #ef4444; }
-        .status.success { color: #10b981; }
-        .status.loading { color: var(--primary); }
+        :root { --primary: #2563eb; --bg: #f8fafc; --surface: #ffffff; --text: #1e293b; --border: #e2e8f0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.6; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        h1, h2, h3 { color: var(--primary); }
+        .card { background: var(--surface); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        select, input, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 5px; box-sizing: border-box; font-family: inherit; }
+        button { background-color: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button:hover { background-color: #1d4ed8; }
+        .btn-secondary { background-color: #10b981; }
+        .btn-secondary:hover { background-color: #059669; }
+        .btn-ai { background-color: #6366f1; margin-right: 5px; margin-bottom: 5px;}
+        textarea { height: 150px; resize: vertical; }
+        .exam-section { background: #f1f5f9; padding: 15px; border-radius: 5px; margin-top: 15px; white-space: pre-wrap; display: none; }
+        .active { display: block; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 10px; overflow-x: auto; }
+        .tab { background: #cbd5e1; color: var(--text); border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; }
+        .tab.active-tab { background: var(--primary); color: white; }
+        .controls { display: flex; gap: 10px; align-items: center; background: #e0e7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+        #record-status { color: red; font-weight: bold; display: none; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <h1>AI Handwriting Scanner</h1>
-        <p>Bóc tách chữ viết tay trên giấy kẻ ô ly bằng AI Vision</p>
-    </header>
+    <h1>🌐 AI Language Exam Hub</h1>
 
-    <div class="main-grid">
-        <div class="card">
-            <div class="input-group">
-                <label for="apiKey">Gemini API Key</label>
-                <input type="password" id="apiKey" placeholder="Nhập API Key của bạn...">
-            </div>
-            
-            <div class="input-group">
-                <label for="imageInput">Chọn ảnh chữ viết tay</label>
-                <input type="file" id="imageInput" accept="image/*">
-            </div>
-
-            <img id="preview-img" alt="Preview">
-
-            <button id="scanBtn" class="btn" disabled>Gửi AI Phân Tích</button>
-            <div id="status" class="status"></div>
-        </div>
-
-        <div class="card">
-            <div class="input-group">
-                <label for="fontSelect">Định dạng phông chữ</label>
-                <select id="fontSelect">
-                    <option value="'Montserrat', sans-serif">Phông mặc định (Dễ đọc)</option>
-                    <option value="'Playfair Display', serif">Cổ điển (Playfair)</option>
-                    <option value="'Dancing Script', cursive">Nghệ thuật (Dancing Script)</option>
-                    <option value="'EB Garamond', serif">Trang trọng (Garamond)</option>
+    <div class="card">
+        <h2>Bước 1: Thiết lập đề thi</h2>
+        <div class="grid">
+            <div>
+                <label>Ngôn ngữ</label>
+                <select id="lang">
+                    <option value="German">Đức (German)</option>
+                    <option value="English">Anh (English)</option>
+                    <option value="Chinese">Trung (Chinese)</option>
+                    <option value="Japanese">Nhật (Japanese)</option>
+                    <option value="Korean">Hàn (Korean)</option>
+                    <option value="Spanish">Tây Ban Nha (Spanish)</option>
+                    <option value="French">Pháp (French)</option>
+                    <option value="Russian">Nga (Russian)</option>
                 </select>
             </div>
-            
-            <textarea id="output-text" placeholder="Văn bản AI trích xuất sẽ hiển thị tại đây..."></textarea>
-            
-            <button id="downloadBtn" class="btn" style="background: #10b981;">Tải xuống file .txt</button>
+            <div>
+                <label>Cấp độ</label>
+                <select id="level">
+                    <option value="B2">B2 (Upper-intermediate)</option>
+                    <option value="C1">C1 (Advanced)</option>
+                </select>
+            </div>
+            <div>
+                <label>Chủ đề (Theme)</label>
+                <input type="text" id="topic" placeholder="VD: Environment, Technology..." value="Technology & Daily Life">
+            </div>
+        </div>
+        <button onclick="generatePrompt()">1. Tạo câu lệnh (Prompt)</button>
+        <button class="btn-secondary" onclick="copyPrompt()">2. Copy Prompt</button>
+        <br><br>
+        <textarea id="generated-prompt" readonly></textarea>
+        
+        <div style="margin-top: 15px;">
+            <strong>3. Mở AI để dán Prompt:</strong>
+            <button class="btn-ai" onclick="window.open('https://chatgpt.com', '_blank')">Mở ChatGPT</button>
+            <button class="btn-ai" onclick="window.open('https://gemini.google.com', '_blank')">Mở Gemini</button>
+            <button class="btn-ai" onclick="window.open('https://chat.deepseek.com', '_blank')">Mở DeepSeek</button>
         </div>
     </div>
-</div>
 
-<script>
-    const apiKeyInput = document.getElementById('apiKey');
-    const imageInput = document.getElementById('imageInput');
-    const previewImg = document.getElementById('preview-img');
-    const scanBtn = document.getElementById('scanBtn');
-    const statusDiv = document.getElementById('status');
-    const outputText = document.getElementById('output-text');
-    const fontSelect = document.getElementById('fontSelect');
-    const downloadBtn = document.getElementById('downloadBtn');
+    <div class="card">
+        <h2>Bước 2: Xử lý Đề thi từ AI</h2>
+        <p>Copy toàn bộ kết quả AI trả về và dán vào đây:</p>
+        <textarea id="ai-response" placeholder="Dán đề thi AI sinh ra vào đây..."></textarea>
+        <br><br>
+        <button onclick="processExam()">Xử lý & Phân chia kỹ năng</button>
+    </div>
 
-    let base64Image = "";
+    <div class="card" id="exam-workspace" style="display: none;">
+        <h2>Bước 3: Không gian làm bài</h2>
+        
+        <div class="tabs">
+            <button class="tab active-tab" onclick="showTab('reading')">Reading</button>
+            <button class="tab" onclick="showTab('listening')">Listening (Audio)</button>
+            <button class="tab" onclick="showTab('writing')">Writing</button>
+            <button class="tab" onclick="showTab('speaking')">Speaking</button>
+            <button class="tab" onclick="showTab('answers')">Answer Key</button>
+        </div>
 
-    // Xử lý khi chọn ảnh
-    imageInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        <div id="reading" class="exam-section active"></div>
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            previewImg.src = event.target.result;
-            previewImg.style.display = 'block';
+        <div id="listening" class="exam-section">
+            <div class="controls">
+                <label>Chọn giọng đọc:</label>
+                <select id="voice-select" style="width: auto;"></select>
+                <button onclick="playListening()">▶ Phát Audio (Bôi đen đoạn cần nghe)</button>
+                <button onclick="stopListening()">⏹ Dừng</button>
+            </div>
+            <div id="listening-content"></div>
+        </div>
+
+        <div id="writing" class="exam-section">
+            <div id="writing-content"></div>
+            <hr style="margin: 20px 0;">
+            <h3>Chấm điểm Viết:</h3>
+            <p>Viết bài của bạn vào đây, sau đó bấm nút để tạo lệnh nhờ AI chấm điểm.</p>
+            <textarea id="user-essay" placeholder="Viết bài luận/email của bạn vào đây..."></textarea>
+            <br><br>
+            <button onclick="generateGradingPrompt('writing')">Tạo lệnh nhờ AI chấm bài Viết</button>
+            <textarea id="grading-prompt" style="display: none; margin-top: 10px;"></textarea>
+        </div>
+
+        <div id="speaking" class="exam-section">
+            <div class="controls">
+                <button class="btn-secondary" onclick="startDictation()">🎤 Bắt đầu nói (Thu âm thành Text)</button>
+                <span id="record-status">Đang thu âm... Hãy nói đi!</span>
+            </div>
+            <textarea id="user-speech" placeholder="Lời bạn nói sẽ được chuyển thành văn bản ở đây. Bạn có thể copy văn bản này đưa cho AI để nhờ chấm điểm phát âm/ngữ pháp..."></textarea>
+            <br><br>
+            <p><i>Mẹo: Để luyện nói trực tiếp (Voice-to-Voice), hãy mở tính năng <strong>Voice trên app ChatGPT</strong> hoặc <strong>Gemini Live trên điện thoại</strong> và đọc Prompt sau:</i></p>
+            <textarea readonly style="height: 80px;">"Act as my language examiner. Ask me the speaking questions from this exam one by one. Wait for my audio response before asking the next question, and correct my pronunciation and grammar."</textarea>
             
-            // Lấy phần dữ liệu base64 (bỏ phần tiền tố data:image/jpeg;base64,)
-            base64Image = event.target.result.split(',')[1];
-            scanBtn.disabled = false;
-        };
-        reader.readAsDataURL(file);
-    });
+            <div id="speaking-content" style="margin-top: 20px;"></div>
+        </div>
 
-    // Gọi API khi nhấn nút
-    scanBtn.addEventListener('click', async () => {
-        const apiKey = apiKeyInput.value.trim();
-        if (!apiKey) {
-            showStatus("Vui lòng nhập API Key trước khi quét.", "error");
-            return;
+        <div id="answers" class="exam-section"></div>
+
+    </div>
+
+    <script>
+        // MẪU PROMPT GỐC
+        const promptTemplate = `Act as a professional language exam designer.
+Your task is to create a complete language exam with 4 skills (Reading, Listening, Writing, Speaking), based on a {LEVEL} level in CEFR.
+
+Core requirements:
+Target language: {LANGUAGE}
+Main theme: {TOPIC}
+All sections must revolve around and consistently develop this theme.
+Difficulty level: {LEVEL}
+Use ONLY the target language in the test content (except instructions if needed)
+
+Exam structure:
+**READING**
+Create 5 parts: Part 1 (Matching), Part 2 (Gap-fill), Part 3 (Multiple-choice), Part 4 (Opinions to headings), Part 5 (Headings to short texts).
+
+**LISTENING**
+Create 4 parts: Part 1 (Short conversations), Part 2 (Interview), Part 3 (Discussion), Part 4 (Lecture).
+CRITICAL: Include FULL TRANSCRIPTS for all listening texts labeled explicitly as "TRANSCRIPT".
+
+**WRITING**
+Task 1: Essay (~150-180 words) related to the theme.
+Task 2: Functional writing (~80-120 words) based on a realistic situation.
+
+**SPEAKING**
+Part 1: Individual presentation.
+Part 2: Discussion/debate on a controversial question.
+
+**ANSWER KEY**
+Provide correct answers for Reading and Listening. Provide sample guidelines for Writing and Speaking.
+
+Format the output clearly with headers: ### READING, ### LISTENING, ### WRITING, ### SPEAKING, ### ANSWER KEY.
+Start generating the exam.`;
+
+        // 1. TẠO PROMPT
+        function generatePrompt() {
+            const lang = document.getElementById('lang').value;
+            const level = document.getElementById('level').value;
+            const topic = document.getElementById('topic').value;
+            
+            let finalPrompt = promptTemplate
+                .replace(/{LANGUAGE}/g, lang)
+                .replace(/{LEVEL}/g, level)
+                .replace(/{TOPIC}/g, topic);
+                
+            document.getElementById('generated-prompt').value = finalPrompt;
         }
 
-        scanBtn.disabled = true;
-        showStatus("AI đang đọc hình ảnh... Vui lòng chờ vài giây.", "loading");
+        // 2. COPY PROMPT
+        function copyPrompt() {
+            const promptText = document.getElementById('generated-prompt');
+            promptText.select();
+            document.execCommand('copy');
+            alert("Đã copy Prompt! Hãy sang tab AI để dán.");
+        }
 
-        const promptText = "Hãy trích xuất toàn bộ chữ viết tay trong bức ảnh này sang văn bản text. Hãy đọc kỹ, bỏ qua các đường kẻ ô ly, bóng mờ hoặc nhiễu. Trữ lại đúng định dạng xuống dòng của người viết. Chỉ trả về phần văn bản bạn đọc được, tuyệt đối không thêm bất kỳ lời bình luận hay giải thích nào khác.";
+        // 3. XỬ LÝ ĐỀ THI
+        function processExam() {
+            const text = document.getElementById('ai-response').value;
+            if (!text.trim()) { alert("Vui lòng dán kết quả từ AI vào trước!"); return; }
 
-        const requestBody = {
-            contents: [{
-                parts: [
-                    { text: promptText },
-                    {
-                        inline_data: {
-                            mime_type: "image/jpeg",
-                            data: base64Image
-                        }
-                    }
-                ]
-            }],
-            generationConfig: {
-                temperature: 0.1 // Giảm tính sáng tạo, ưu tiên tính chính xác
+            document.getElementById('exam-workspace').style.display = 'block';
+
+            // Logic tách phần đơn giản dựa vào từ khóa (Vì AI có thể format khác nhau)
+            const sections = { reading: "", listening: "", writing: "", speaking: "", answers: "" };
+            let currentSection = 'reading'; // default
+            
+            const lines = text.split('\n');
+            for (let line of lines) {
+                let upperLine = line.toUpperCase();
+                if (upperLine.includes('READING') && upperLine.length < 20) currentSection = 'reading';
+                else if (upperLine.includes('LISTENING') && upperLine.length < 20) currentSection = 'listening';
+                else if (upperLine.includes('WRITING') && upperLine.length < 20) currentSection = 'writing';
+                else if (upperLine.includes('SPEAKING') && upperLine.length < 20) currentSection = 'speaking';
+                else if ((upperLine.includes('ANSWER KEY') || upperLine.includes('ANSWERS')) && upperLine.length < 20) currentSection = 'answers';
+                else {
+                    sections[currentSection] += line + '\n';
+                }
             }
-        };
 
-        try {
-            // Gọi API Gemini 1.5 Flash (nhanh và xử lý ảnh xuất sắc)
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
+            document.getElementById('reading').innerText = sections.reading || "Không tìm thấy phần Reading. Hãy tự đọc trong text gốc.";
+            document.getElementById('listening-content').innerText = sections.listening || "Không tìm thấy phần Listening.";
+            document.getElementById('writing-content').innerText = sections.writing || "Không tìm thấy phần Writing.";
+            document.getElementById('speaking-content').innerText = sections.speaking || "Không tìm thấy phần Speaking.";
+            document.getElementById('answers').innerText = sections.answers || "Không tìm thấy phần Answer Key.";
+            
+            loadVoices();
+        }
+
+        // CHUYỂN TAB
+        function showTab(tabId) {
+            document.querySelectorAll('.exam-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active-tab'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active-tab');
+        }
+
+        // 4. KỸ NĂNG NGHE (Web Speech API)
+        let synth = window.speechSynthesis;
+        let voices = [];
+
+        function loadVoices() {
+            voices = synth.getVoices();
+            const voiceSelect = document.getElementById('voice-select');
+            voiceSelect.innerHTML = '';
+            voices.forEach((voice, i) => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = i;
+                voiceSelect.appendChild(option);
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error?.message || "Lỗi kết nối API");
-            }
-
-            // Trích xuất text từ response của Google
-            const extractedText = data.candidates[0].content.parts[0].text;
-            outputText.value = extractedText;
-            showStatus("Thành công! Đã bóc tách văn bản.", "success");
-
-        } catch (error) {
-            showStatus(`Lỗi: ${error.message}`, "error");
-        } finally {
-            scanBtn.disabled = false;
         }
-    });
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
 
-    // Đổi phông chữ
-    fontSelect.addEventListener('change', () => {
-        outputText.style.fontFamily = fontSelect.value;
-    });
+        function playListening() {
+            if (synth.speaking) { console.error('Đang đọc rồi.'); return; }
+            
+            // Lấy văn bản người dùng bôi đen, nếu không bôi đen thì đọc toàn bộ
+            let textToRead = window.getSelection().toString();
+            if(!textToRead) textToRead = document.getElementById('listening-content').innerText;
 
-    // Tải file
-    downloadBtn.addEventListener('click', () => {
-        if (!outputText.value) return;
-        const blob = new Blob([outputText.value], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'AI_Scan_Result.txt';
-        a.click();
-        window.URL.revokeObjectURL(url);
-    });
+            if (textToRead !== '') {
+                const utterThis = new SpeechSynthesisUtterance(textToRead);
+                const selectedOption = document.getElementById('voice-select').selectedOptions[0].value;
+                utterThis.voice = voices[selectedOption];
+                utterThis.rate = 0.9; // Tốc độ đọc
+                synth.speak(utterThis);
+            } else {
+                alert("Không có chữ để đọc!");
+            }
+        }
 
-    function showStatus(message, type) {
-        statusDiv.innerText = message;
-        statusDiv.className = `status ${type}`;
-    }
-</script>
+        function stopListening() { synth.cancel(); }
+
+        // 5. KỸ NĂNG VIẾT (Tạo prompt nhờ chấm)
+        function generateGradingPrompt() {
+            const essay = document.getElementById('user-essay').value;
+            const topic = document.getElementById('topic').value;
+            const lang = document.getElementById('lang').value;
+            const level = document.getElementById('level').value;
+
+            if (!essay) { alert("Bạn chưa viết bài!"); return; }
+
+            const prompt = `I have written a text in ${lang} for a ${level} level exam about "${topic}". \n\nPlease act as a strict language examiner. \n1. Score my text based on grammar, vocabulary, coherence, and task achievement.\n2. Point out specific errors and correct them.\n3. Provide an improved version of my text.\n\nHere is my text:\n"""\n${essay}\n"""`;
+            
+            const promptBox = document.getElementById('grading-prompt');
+            promptBox.style.display = 'block';
+            promptBox.value = prompt;
+            promptBox.select();
+            document.execCommand('copy');
+            alert("Đã copy Prompt chấm điểm! Hãy sang tab AI dán vào để AI chấm.");
+        }
+
+        // 6. KỸ NĂNG NÓI (Speech to Text)
+        function startDictation() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert("Trình duyệt của bạn không hỗ trợ thu âm trực tiếp. Vui lòng dùng Google Chrome.");
+                return;
+            }
+            const status = document.getElementById('record-status');
+            const recognition = new webkitSpeechRecognition();
+            
+            // Setup ngôn ngữ theo lựa chọn
+            const langMap = { "German": "de-DE", "English": "en-US", "Chinese": "zh-CN", "Japanese": "ja-JP", "Korean": "ko-KR", "Spanish": "es-ES", "French": "fr-FR", "Russian": "ru-RU" };
+            const selectedLang = document.getElementById('lang').value;
+            
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = langMap[selectedLang] || 'en-US';
+
+            recognition.onstart = function() { status.style.display = 'inline'; };
+            
+            recognition.onresult = function(event) {
+                let final_transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) final_transcript += event.results[i][0].transcript;
+                }
+                if (final_transcript) {
+                    document.getElementById('user-speech').value += final_transcript + ' ';
+                }
+            };
+            
+            recognition.onerror = function(event) { console.error("Lỗi thu âm: ", event.error); status.style.display = 'none'; };
+            recognition.onend = function() { status.style.display = 'none'; };
+            
+            recognition.start();
+        }
+    </script>
 </body>
 </html>
-"""
-
-with open("ai_handwriting_scanner.html", "w", encoding="utf-8") as f:
-    f.write(html_content)
-
-print("ai_handwriting_scanner.html")
