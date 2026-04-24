@@ -1,12 +1,20 @@
+Chào bạn, tôi đã tinh chỉnh lại giao diện theo đúng ý bạn:
+
+1. **Nhóm 3 nút mở AI** đã được gỡ khỏi Bước 1 và chuyển thành một thanh trượt nổi (Floating Menu) cố định **dọc bên góc phải màn hình**. Khi bạn cuộn chuột lên xuống, 3 nút này vẫn sẽ ở đó để bạn tiện bấm bất cứ lúc nào.
+2. **Ở phần Speaking (Nói):** Tôi đã thêm một nút chuyên biệt màu vàng nổi bật để liên kết thẳng đến **Google AI Studio Live** với model `gemini-3.1-flash-live-preview` dạng Popup như bạn yêu cầu.
+
+Bạn hãy copy toàn bộ đoạn mã dưới đây và dán đè lên file cũ nhé:
+
+```html
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Language Exam Generator V2</title>
+    <title>AI Language Exam Generator V3</title>
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --surface: #ffffff; --text: #1e293b; --border: #e2e8f0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.6; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.6; padding: 20px; max-width: 1200px; margin: 0 auto; position: relative; }
         h1, h2, h3 { color: var(--primary); margin-top: 0; }
         .card { background: var(--surface); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
@@ -16,7 +24,7 @@
         button:hover { background-color: #1d4ed8; }
         .btn-secondary { background-color: #10b981; }
         .btn-secondary:hover { background-color: #059669; }
-        .btn-ai { background-color: #6366f1; margin-right: 5px; margin-bottom: 5px;}
+        
         textarea { height: 120px; resize: vertical; }
         
         /* Chỉnh sửa giao diện làm bài */
@@ -36,9 +44,45 @@
         .controls { display: flex; gap: 10px; align-items: center; background: #e0e7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         #record-status { color: #dc2626; font-weight: bold; display: none; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0; } }
+
+        /* Nút công cụ AI cố định bên phải */
+        .floating-ai-tools {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+        .floating-ai-tools button {
+            background-color: #4f46e5; /* Màu chàm mượt mà */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+            width: 140px;
+        }
+        .floating-ai-tools button:hover { background-color: #3730a3; transform: scale(1.05); }
+        
+        /* Chỉnh lại vị trí nút nổi trên điện thoại cho đỡ vướng */
+        @media (max-width: 1000px) {
+            .floating-ai-tools {
+                top: auto;
+                bottom: 20px;
+                right: 20px;
+                transform: none;
+            }
+        }
     </style>
 </head>
 <body>
+
+    <div class="floating-ai-tools">
+        <button onclick="openAIPopup('https://chatgpt.com')">🤖 Mở ChatGPT</button>
+        <button onclick="openAIPopup('https://gemini.google.com')">✨ Mở Gemini</button>
+        <button onclick="openAIPopup('https://chat.deepseek.com')">🐋 Mở DeepSeek</button>
+    </div>
 
     <h1>🌐 AI Language Exam Hub</h1>
 
@@ -75,16 +119,9 @@
             </div>
         </div>
         <button onclick="generatePrompt()">1. Tạo câu lệnh (Prompt)</button>
-        <button class="btn-secondary" onclick="copyPrompt()">2. Copy Prompt</button>
+        <button class="btn-secondary" onclick="copyPrompt()">2. Copy Prompt (Sau đó bấm mở AI bên góc phải)</button>
         <br><br>
         <textarea id="generated-prompt" readonly style="height: 80px;"></textarea>
-        
-        <div style="margin-top: 15px;">
-            <strong>3. Mở công cụ AI (Dạng Cửa sổ nhỏ / Popup):</strong><br><br>
-            <button class="btn-ai" onclick="openAIPopup('https://chatgpt.com')">Mở ChatGPT</button>
-            <button class="btn-ai" onclick="openAIPopup('https://gemini.google.com')">Mở Gemini</button>
-            <button class="btn-ai" onclick="openAIPopup('https://chat.deepseek.com')">Mở DeepSeek</button>
-        </div>
     </div>
 
     <div class="card">
@@ -159,8 +196,11 @@
                 </div>
             </div>
             <br>
-            <p><i>💡 Mẹo: Để luyện nói trực tiếp (Voice-to-Voice), hãy mở Popup ChatGPT / Google AI Studio và đọc câu lệnh sau để máy đóng vai giám khảo:</i></p>
-            <textarea readonly style="height: 60px;">"Act as my language examiner. Ask me the speaking questions from this exam one by one. Wait for my audio response before asking the next question, and correct my pronunciation."</textarea>
+            <div style="background: #fffbeb; padding: 15px; border-left: 4px solid #f59e0b; border-radius: 5px;">
+                <p style="margin-top:0;"><i>💡 <strong>Chế độ luyện thi vấn đáp thực tế:</strong> Copy câu lệnh bên dưới, sau đó bấm nút để mở Google AI Studio Live và dán vào để bắt đầu thi.</i></p>
+                <textarea id="live-prompt" readonly style="height: 60px; margin-bottom: 10px;">"Act as my language examiner. Ask me the speaking questions from this exam one by one. Wait for my audio response before asking the next question, and correct my pronunciation."</textarea>
+                <button onclick="copyAndOpenStudio()" style="background-color: #d97706; width: 100%;">🎙️ Copy Lệnh & Mở Google AI Studio Live</button>
+            </div>
         </div>
 
         <div id="answers" class="exam-section">
@@ -170,10 +210,18 @@
     </div>
 
     <script>
-        // HÀM MỞ POPUP (Thay vì mở Tab)
+        // HÀM MỞ POPUP 
         function openAIPopup(url) {
-            // Mở một cửa sổ mới với kích thước 600x700 pixel
             window.open(url, "AIAssistantPopup", "width=600,height=700,left=200,top=100,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no");
+        }
+
+        // HÀM ĐẶC BIỆT CHO GOOGLE AI STUDIO LIVE
+        function copyAndOpenStudio() {
+            const promptText = document.getElementById('live-prompt');
+            promptText.select();
+            document.execCommand('copy');
+            alert("Đã copy lệnh! Đang mở Google AI Studio Live...");
+            openAIPopup('https://aistudio.google.com/live?model=gemini-3.1-flash-live-preview');
         }
 
         const promptTemplate = `Act as a professional language exam designer.
@@ -199,7 +247,7 @@ Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### 
             const promptText = document.getElementById('generated-prompt');
             promptText.select();
             document.execCommand('copy');
-            alert("Đã copy Prompt! Hãy bấm nút Mở công cụ AI bên dưới và dán vào cửa sổ Popup.");
+            alert("Đã copy Prompt! Vui lòng dùng thanh công cụ bên phải để mở AI.");
         }
 
         function processExam() {
@@ -283,10 +331,9 @@ Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### 
             promptBox.value = prompt;
             promptBox.select();
             document.execCommand('copy');
-            alert("Đã copy Prompt chấm điểm! Hãy mở Popup AI lên và dán vào.");
+            alert("Đã copy Prompt chấm điểm! Hãy mở Popup AI ở góc phải để dán vào.");
         }
 
-        // Đã cập nhật theo yêu cầu trong User Correction Ledger: Dùng event-based cho speech recognition
         function startDictation() {
             if (!('webkitSpeechRecognition' in window)) {
                 alert("Trình duyệt không hỗ trợ. Vui lòng dùng Google Chrome."); return;
@@ -294,7 +341,7 @@ Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### 
             const status = document.getElementById('record-status');
             const recognition = new webkitSpeechRecognition();
             
-            const langMap = { "German": "de-DE", "English": "en-US", "Chinese": "zh-CN", "Japanese": "ja-JP", "Korean": "ko-KR", "Spanish": "es-ES", "French": "fr-FR", "Russian": "ru-RU", "Hindi": "hi-IN", "Arabic": "ar-SA", "Thai": "th-TH" };
+            const langMap = { "German": "de-DE", "English": "en-US", "Chinese": "zh-CN", "Japanese": "ja-JP", "Korean": "ko-KR", "Spanish": "es-ES", "French": "fr-FR", "Russian": "ru-RU", "Hindi": "hi-IN", "Arabic": "ar-SA", "Thai": "th-TH", "Filipino": "fil-PH" };
             const selectedLang = document.getElementById('lang').value;
             
             recognition.continuous = true;
@@ -322,3 +369,4 @@ Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### 
     </script>
 </body>
 </html>
+```
