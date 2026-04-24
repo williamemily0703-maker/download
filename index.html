@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Language Exam Generator</title>
+    <title>AI Language Exam Generator V2</title>
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --surface: #ffffff; --text: #1e293b; --border: #e2e8f0; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.6; padding: 20px; max-width: 1200px; margin: 0 auto; }
-        h1, h2, h3 { color: var(--primary); }
+        h1, h2, h3 { color: var(--primary); margin-top: 0; }
         .card { background: var(--surface); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
         label { font-weight: bold; display: block; margin-bottom: 5px; }
@@ -17,14 +17,24 @@
         .btn-secondary { background-color: #10b981; }
         .btn-secondary:hover { background-color: #059669; }
         .btn-ai { background-color: #6366f1; margin-right: 5px; margin-bottom: 5px;}
-        textarea { height: 150px; resize: vertical; }
-        .exam-section { background: #f1f5f9; padding: 15px; border-radius: 5px; margin-top: 15px; white-space: pre-wrap; display: none; }
+        textarea { height: 120px; resize: vertical; }
+        
+        /* Chỉnh sửa giao diện làm bài */
+        .exam-section { display: none; }
         .active { display: block; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 10px; overflow-x: auto; }
-        .tab { background: #cbd5e1; color: var(--text); border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        .tab { background: #cbd5e1; color: var(--text); border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px 5px 0 0; font-weight: bold; }
         .tab.active-tab { background: var(--primary); color: white; }
-        .controls { display: flex; gap: 10px; align-items: center; background: #e0e7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
-        #record-status { color: red; font-weight: bold; display: none; animation: blink 1s infinite; }
+        
+        .workspace-grid { display: grid; grid-template-columns: 3fr 1.5fr; gap: 20px; }
+        @media (max-width: 768px) { .workspace-grid { grid-template-columns: 1fr; } }
+        
+        .exam-content-box { background: #f1f5f9; padding: 15px; border-radius: 5px; white-space: pre-wrap; height: 500px; overflow-y: auto; border: 1px solid var(--border); }
+        .answer-box { background: #e0f2fe; padding: 15px; border-radius: 5px; border: 1px solid #bae6fd; display: flex; flex-direction: column; }
+        .answer-box textarea { flex-grow: 1; height: auto; min-height: 300px; font-family: monospace; font-size: 14px; background: white; }
+        
+        .controls { display: flex; gap: 10px; align-items: center; background: #e0e7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px; flex-wrap: wrap; }
+        #record-status { color: #dc2626; font-weight: bold; display: none; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
@@ -45,6 +55,10 @@
                     <option value="Korean">Hàn (Korean)</option>
                     <option value="Spanish">Tây Ban Nha (Spanish)</option>
                     <option value="French">Pháp (French)</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="Arabic">Arabic</option>
+                    <option value="Thai">Thái (Thai)</option>
+                    <option value="Filipino">Filipino</option>
                     <option value="Russian">Nga (Russian)</option>
                 </select>
             </div>
@@ -63,13 +77,13 @@
         <button onclick="generatePrompt()">1. Tạo câu lệnh (Prompt)</button>
         <button class="btn-secondary" onclick="copyPrompt()">2. Copy Prompt</button>
         <br><br>
-        <textarea id="generated-prompt" readonly></textarea>
+        <textarea id="generated-prompt" readonly style="height: 80px;"></textarea>
         
         <div style="margin-top: 15px;">
-            <strong>3. Mở AI để dán Prompt:</strong>
-            <button class="btn-ai" onclick="window.open('https://chatgpt.com', '_blank')">Mở ChatGPT</button>
-            <button class="btn-ai" onclick="window.open('https://gemini.google.com', '_blank')">Mở Gemini</button>
-            <button class="btn-ai" onclick="window.open('https://chat.deepseek.com', '_blank')">Mở DeepSeek</button>
+            <strong>3. Mở công cụ AI (Dạng Cửa sổ nhỏ / Popup):</strong><br><br>
+            <button class="btn-ai" onclick="openAIPopup('https://chatgpt.com')">Mở ChatGPT</button>
+            <button class="btn-ai" onclick="openAIPopup('https://gemini.google.com')">Mở Gemini</button>
+            <button class="btn-ai" onclick="openAIPopup('https://chat.deepseek.com')">Mở DeepSeek</button>
         </div>
     </div>
 
@@ -78,41 +92,57 @@
         <p>Copy toàn bộ kết quả AI trả về và dán vào đây:</p>
         <textarea id="ai-response" placeholder="Dán đề thi AI sinh ra vào đây..."></textarea>
         <br><br>
-        <button onclick="processExam()">Xử lý & Phân chia kỹ năng</button>
+        <button onclick="processExam()">Xử lý & Tạo không gian làm bài</button>
     </div>
 
     <div class="card" id="exam-workspace" style="display: none;">
         <h2>Bước 3: Không gian làm bài</h2>
         
         <div class="tabs">
-            <button class="tab active-tab" onclick="showTab('reading')">Reading</button>
-            <button class="tab" onclick="showTab('listening')">Listening (Audio)</button>
-            <button class="tab" onclick="showTab('writing')">Writing</button>
-            <button class="tab" onclick="showTab('speaking')">Speaking</button>
-            <button class="tab" onclick="showTab('answers')">Answer Key</button>
+            <button class="tab active-tab" onclick="showTab('reading')">📝 Reading</button>
+            <button class="tab" onclick="showTab('listening')">🎧 Listening</button>
+            <button class="tab" onclick="showTab('writing')">✍️ Writing</button>
+            <button class="tab" onclick="showTab('speaking')">🗣️ Speaking</button>
+            <button class="tab" onclick="showTab('answers')">✅ Answer Key</button>
         </div>
 
-        <div id="reading" class="exam-section active"></div>
+        <div id="reading" class="exam-section active">
+            <div class="workspace-grid">
+                <div class="exam-content-box" id="reading-content"></div>
+                <div class="answer-box">
+                    <h3>Phiếu làm bài Reading</h3>
+                    <p style="font-size: 12px; margin-top: 0;">Gõ đáp án của bạn vào đây (VD: 1A, 2B, 3. True...)</p>
+                    <textarea placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>
+                </div>
+            </div>
+        </div>
 
         <div id="listening" class="exam-section">
             <div class="controls">
                 <label>Chọn giọng đọc:</label>
-                <select id="voice-select" style="width: auto;"></select>
-                <button onclick="playListening()">▶ Phát Audio (Bôi đen đoạn cần nghe)</button>
-                <button onclick="stopListening()">⏹ Dừng</button>
+                <select id="voice-select" style="max-width: 200px;"></select>
+                <button onclick="playListening()">▶ Phát Audio (Đọc đoạn bôi đen)</button>
+                <button class="btn-secondary" onclick="stopListening()">⏹ Dừng</button>
             </div>
-            <div id="listening-content"></div>
+            <div class="workspace-grid">
+                <div class="exam-content-box" id="listening-content"></div>
+                <div class="answer-box">
+                    <h3>Phiếu làm bài Listening</h3>
+                    <textarea placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>
+                </div>
+            </div>
         </div>
 
         <div id="writing" class="exam-section">
-            <div id="writing-content"></div>
-            <hr style="margin: 20px 0;">
-            <h3>Chấm điểm Viết:</h3>
-            <p>Viết bài của bạn vào đây, sau đó bấm nút để tạo lệnh nhờ AI chấm điểm.</p>
-            <textarea id="user-essay" placeholder="Viết bài luận/email của bạn vào đây..."></textarea>
-            <br><br>
-            <button onclick="generateGradingPrompt('writing')">Tạo lệnh nhờ AI chấm bài Viết</button>
-            <textarea id="grading-prompt" style="display: none; margin-top: 10px;"></textarea>
+            <div class="workspace-grid">
+                <div class="exam-content-box" id="writing-content"></div>
+                <div class="answer-box">
+                    <h3>Bài làm của bạn</h3>
+                    <textarea id="user-essay" placeholder="Gõ bài luận hoặc email của bạn trực tiếp vào đây..."></textarea>
+                    <button style="margin-top: 10px;" onclick="generateGradingPrompt('writing')">Tạo lệnh nhờ AI chấm bài</button>
+                </div>
+            </div>
+            <textarea id="grading-prompt" style="display: none; margin-top: 10px; height: 80px;"></textarea>
         </div>
 
         <div id="speaking" class="exam-section">
@@ -120,117 +150,94 @@
                 <button class="btn-secondary" onclick="startDictation()">🎤 Bắt đầu nói (Thu âm thành Text)</button>
                 <span id="record-status">Đang thu âm... Hãy nói đi!</span>
             </div>
-            <textarea id="user-speech" placeholder="Lời bạn nói sẽ được chuyển thành văn bản ở đây. Bạn có thể copy văn bản này đưa cho AI để nhờ chấm điểm phát âm/ngữ pháp..."></textarea>
-            <br><br>
-            <p><i>Mẹo: Để luyện nói trực tiếp (Voice-to-Voice), hãy mở tính năng <strong>Voice trên app ChatGPT</strong> hoặc <strong>Gemini Live trên điện thoại</strong> và đọc Prompt sau:</i></p>
-            <textarea readonly style="height: 80px;">"Act as my language examiner. Ask me the speaking questions from this exam one by one. Wait for my audio response before asking the next question, and correct my pronunciation and grammar."</textarea>
-            
-            <div id="speaking-content" style="margin-top: 20px;"></div>
+            <div class="workspace-grid">
+                <div class="exam-content-box" id="speaking-content"></div>
+                <div class="answer-box">
+                    <h3>Giáp nháp / Lời bạn nói</h3>
+                    <p style="font-size: 12px; margin-top: 0;">Văn bản bạn đọc sẽ hiện ra ở đây, copy đem cho AI chấm lỗi sai.</p>
+                    <textarea id="user-speech"></textarea>
+                </div>
+            </div>
+            <br>
+            <p><i>💡 Mẹo: Để luyện nói trực tiếp (Voice-to-Voice), hãy mở Popup ChatGPT / Google AI Studio và đọc câu lệnh sau để máy đóng vai giám khảo:</i></p>
+            <textarea readonly style="height: 60px;">"Act as my language examiner. Ask me the speaking questions from this exam one by one. Wait for my audio response before asking the next question, and correct my pronunciation."</textarea>
         </div>
 
-        <div id="answers" class="exam-section"></div>
+        <div id="answers" class="exam-section">
+            <div class="exam-content-box" id="answers-content" style="height: auto; max-height: 600px;"></div>
+        </div>
 
     </div>
 
     <script>
-        // MẪU PROMPT GỐC
+        // HÀM MỞ POPUP (Thay vì mở Tab)
+        function openAIPopup(url) {
+            // Mở một cửa sổ mới với kích thước 600x700 pixel
+            window.open(url, "AIAssistantPopup", "width=600,height=700,left=200,top=100,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no");
+        }
+
         const promptTemplate = `Act as a professional language exam designer.
 Your task is to create a complete language exam with 4 skills (Reading, Listening, Writing, Speaking), based on a {LEVEL} level in CEFR.
+Target language: {LANGUAGE}. Main theme: {TOPIC}. Difficulty level: {LEVEL}.
 
-Core requirements:
-Target language: {LANGUAGE}
-Main theme: {TOPIC}
-All sections must revolve around and consistently develop this theme.
-Difficulty level: {LEVEL}
-Use ONLY the target language in the test content (except instructions if needed)
+**READING**: 5 parts (Matching, Gap-fill, Multiple-choice, Opinions to headings, Headings to short texts).
+**LISTENING**: 4 parts (Short conversations, Interview, Discussion, Lecture). Include FULL TRANSCRIPTS labeled as "TRANSCRIPT".
+**WRITING**: Task 1 (Essay ~150-180 words). Task 2 (Functional writing ~80-120 words).
+**SPEAKING**: Part 1 (Individual presentation). Part 2 (Discussion/debate).
+**ANSWER KEY**: Provide correct answers for Reading and Listening. Provide guidelines for Writing and Speaking.
 
-Exam structure:
-**READING**
-Create 5 parts: Part 1 (Matching), Part 2 (Gap-fill), Part 3 (Multiple-choice), Part 4 (Opinions to headings), Part 5 (Headings to short texts).
+Format exactly with these headers: ### READING, ### LISTENING, ### WRITING, ### SPEAKING, ### ANSWER KEY. Use the target language for the test content.`;
 
-**LISTENING**
-Create 4 parts: Part 1 (Short conversations), Part 2 (Interview), Part 3 (Discussion), Part 4 (Lecture).
-CRITICAL: Include FULL TRANSCRIPTS for all listening texts labeled explicitly as "TRANSCRIPT".
-
-**WRITING**
-Task 1: Essay (~150-180 words) related to the theme.
-Task 2: Functional writing (~80-120 words) based on a realistic situation.
-
-**SPEAKING**
-Part 1: Individual presentation.
-Part 2: Discussion/debate on a controversial question.
-
-**ANSWER KEY**
-Provide correct answers for Reading and Listening. Provide sample guidelines for Writing and Speaking.
-
-Format the output clearly with headers: ### READING, ### LISTENING, ### WRITING, ### SPEAKING, ### ANSWER KEY.
-Start generating the exam.`;
-
-        // 1. TẠO PROMPT
         function generatePrompt() {
             const lang = document.getElementById('lang').value;
             const level = document.getElementById('level').value;
             const topic = document.getElementById('topic').value;
-            
-            let finalPrompt = promptTemplate
-                .replace(/{LANGUAGE}/g, lang)
-                .replace(/{LEVEL}/g, level)
-                .replace(/{TOPIC}/g, topic);
-                
-            document.getElementById('generated-prompt').value = finalPrompt;
+            document.getElementById('generated-prompt').value = promptTemplate.replace(/{LANGUAGE}/g, lang).replace(/{LEVEL}/g, level).replace(/{TOPIC}/g, topic);
         }
 
-        // 2. COPY PROMPT
         function copyPrompt() {
             const promptText = document.getElementById('generated-prompt');
             promptText.select();
             document.execCommand('copy');
-            alert("Đã copy Prompt! Hãy sang tab AI để dán.");
+            alert("Đã copy Prompt! Hãy bấm nút Mở công cụ AI bên dưới và dán vào cửa sổ Popup.");
         }
 
-        // 3. XỬ LÝ ĐỀ THI
         function processExam() {
             const text = document.getElementById('ai-response').value;
             if (!text.trim()) { alert("Vui lòng dán kết quả từ AI vào trước!"); return; }
 
             document.getElementById('exam-workspace').style.display = 'block';
 
-            // Logic tách phần đơn giản dựa vào từ khóa (Vì AI có thể format khác nhau)
             const sections = { reading: "", listening: "", writing: "", speaking: "", answers: "" };
-            let currentSection = 'reading'; // default
+            let currentSection = 'reading'; 
             
             const lines = text.split('\n');
             for (let line of lines) {
                 let upperLine = line.toUpperCase();
-                if (upperLine.includes('READING') && upperLine.length < 20) currentSection = 'reading';
-                else if (upperLine.includes('LISTENING') && upperLine.length < 20) currentSection = 'listening';
-                else if (upperLine.includes('WRITING') && upperLine.length < 20) currentSection = 'writing';
-                else if (upperLine.includes('SPEAKING') && upperLine.length < 20) currentSection = 'speaking';
-                else if ((upperLine.includes('ANSWER KEY') || upperLine.includes('ANSWERS')) && upperLine.length < 20) currentSection = 'answers';
-                else {
-                    sections[currentSection] += line + '\n';
-                }
+                if (upperLine.includes('READING') && upperLine.length < 25) currentSection = 'reading';
+                else if (upperLine.includes('LISTENING') && upperLine.length < 25) currentSection = 'listening';
+                else if (upperLine.includes('WRITING') && upperLine.length < 25) currentSection = 'writing';
+                else if (upperLine.includes('SPEAKING') && upperLine.length < 25) currentSection = 'speaking';
+                else if ((upperLine.includes('ANSWER KEY') || upperLine.includes('ANSWERS')) && upperLine.length < 25) currentSection = 'answers';
+                else sections[currentSection] += line + '\n';
             }
 
-            document.getElementById('reading').innerText = sections.reading || "Không tìm thấy phần Reading. Hãy tự đọc trong text gốc.";
+            document.getElementById('reading-content').innerText = sections.reading || "Không tìm thấy phần Reading.";
             document.getElementById('listening-content').innerText = sections.listening || "Không tìm thấy phần Listening.";
             document.getElementById('writing-content').innerText = sections.writing || "Không tìm thấy phần Writing.";
             document.getElementById('speaking-content').innerText = sections.speaking || "Không tìm thấy phần Speaking.";
-            document.getElementById('answers').innerText = sections.answers || "Không tìm thấy phần Answer Key.";
+            document.getElementById('answers-content').innerText = sections.answers || "Không tìm thấy phần Answer Key.";
             
             loadVoices();
         }
 
-        // CHUYỂN TAB
         function showTab(tabId) {
             document.querySelectorAll('.exam-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active-tab'));
-            
             document.getElementById(tabId).classList.add('active');
             event.target.classList.add('active-tab');
         }
 
-        // 4. KỸ NĂNG NGHE (Web Speech API)
         let synth = window.speechSynthesis;
         let voices = [];
 
@@ -245,14 +252,10 @@ Start generating the exam.`;
                 voiceSelect.appendChild(option);
             });
         }
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = loadVoices;
-        }
+        if (speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = loadVoices; }
 
         function playListening() {
-            if (synth.speaking) { console.error('Đang đọc rồi.'); return; }
-            
-            // Lấy văn bản người dùng bôi đen, nếu không bôi đen thì đọc toàn bộ
+            if (synth.speaking) { synth.cancel(); } 
             let textToRead = window.getSelection().toString();
             if(!textToRead) textToRead = document.getElementById('listening-content').innerText;
 
@@ -260,65 +263,59 @@ Start generating the exam.`;
                 const utterThis = new SpeechSynthesisUtterance(textToRead);
                 const selectedOption = document.getElementById('voice-select').selectedOptions[0].value;
                 utterThis.voice = voices[selectedOption];
-                utterThis.rate = 0.9; // Tốc độ đọc
+                utterThis.rate = 0.9; 
                 synth.speak(utterThis);
-            } else {
-                alert("Không có chữ để đọc!");
-            }
+            } else { alert("Vui lòng bôi đen đoạn Transcript bạn muốn nghe!"); }
         }
 
         function stopListening() { synth.cancel(); }
 
-        // 5. KỸ NĂNG VIẾT (Tạo prompt nhờ chấm)
         function generateGradingPrompt() {
             const essay = document.getElementById('user-essay').value;
-            const topic = document.getElementById('topic').value;
+            if (!essay) { alert("Bạn chưa viết bài!"); return; }
             const lang = document.getElementById('lang').value;
             const level = document.getElementById('level').value;
 
-            if (!essay) { alert("Bạn chưa viết bài!"); return; }
-
-            const prompt = `I have written a text in ${lang} for a ${level} level exam about "${topic}". \n\nPlease act as a strict language examiner. \n1. Score my text based on grammar, vocabulary, coherence, and task achievement.\n2. Point out specific errors and correct them.\n3. Provide an improved version of my text.\n\nHere is my text:\n"""\n${essay}\n"""`;
+            const prompt = `Act as a strict examiner. Grade my ${level} ${lang} writing task. \n\n1. Score it.\n2. Point out errors and explain.\n3. Provide an improved version.\n\nHere is my text:\n"""\n${essay}\n"""`;
             
             const promptBox = document.getElementById('grading-prompt');
             promptBox.style.display = 'block';
             promptBox.value = prompt;
             promptBox.select();
             document.execCommand('copy');
-            alert("Đã copy Prompt chấm điểm! Hãy sang tab AI dán vào để AI chấm.");
+            alert("Đã copy Prompt chấm điểm! Hãy mở Popup AI lên và dán vào.");
         }
 
-        // 6. KỸ NĂNG NÓI (Speech to Text)
+        // Đã cập nhật theo yêu cầu trong User Correction Ledger: Dùng event-based cho speech recognition
         function startDictation() {
             if (!('webkitSpeechRecognition' in window)) {
-                alert("Trình duyệt của bạn không hỗ trợ thu âm trực tiếp. Vui lòng dùng Google Chrome.");
-                return;
+                alert("Trình duyệt không hỗ trợ. Vui lòng dùng Google Chrome."); return;
             }
             const status = document.getElementById('record-status');
             const recognition = new webkitSpeechRecognition();
             
-            // Setup ngôn ngữ theo lựa chọn
-            const langMap = { "German": "de-DE", "English": "en-US", "Chinese": "zh-CN", "Japanese": "ja-JP", "Korean": "ko-KR", "Spanish": "es-ES", "French": "fr-FR", "Russian": "ru-RU" };
+            const langMap = { "German": "de-DE", "English": "en-US", "Chinese": "zh-CN", "Japanese": "ja-JP", "Korean": "ko-KR", "Spanish": "es-ES", "French": "fr-FR", "Russian": "ru-RU", "Hindi": "hi-IN", "Arabic": "ar-SA", "Thai": "th-TH" };
             const selectedLang = document.getElementById('lang').value;
             
             recognition.continuous = true;
             recognition.interimResults = true;
             recognition.lang = langMap[selectedLang] || 'en-US';
 
-            recognition.onstart = function() { status.style.display = 'inline'; };
+            recognition.onstart = () => { status.style.display = 'inline'; };
             
-            recognition.onresult = function(event) {
+            recognition.onresult = (event) => {
                 let final_transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) final_transcript += event.results[i][0].transcript;
                 }
                 if (final_transcript) {
-                    document.getElementById('user-speech').value += final_transcript + ' ';
+                    const speechBox = document.getElementById('user-speech');
+                    speechBox.value += final_transcript + ' ';
                 }
             };
             
-            recognition.onerror = function(event) { console.error("Lỗi thu âm: ", event.error); status.style.display = 'none'; };
-            recognition.onend = function() { status.style.display = 'none'; };
+            recognition.onerror = (event) => { console.error("Lỗi: ", event.error); status.style.display = 'none'; };
+            recognition.onend = () => { status.style.display = 'none'; };
             
             recognition.start();
         }
